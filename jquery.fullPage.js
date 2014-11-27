@@ -1,5 +1,5 @@
 /**
- * fullPage 2.4.8
+ * fullPage 2.5.0
  * https://github.com/alvarotrigo/fullPage.js
  * MIT licensed
  *
@@ -66,6 +66,9 @@
 		}, options);
 
 	    displayWarnings();
+
+	    //easeInQuart animation included in the plugin
+	    $.extend($.easing,{ easeInQuart: function (x, t, b, c, d) { return c*(t/=d)*t*t*t + b; }});
 
 		//Defines the delay to take place before being able to scroll to the next section
 		//BE CAREFUL! Not recommened to change it under 400 for a good behavior in laptops and
@@ -209,8 +212,8 @@
 		$.fn.fullpage.reBuild = function(resizing){
 			isResizing = true;
 
-			var windowsWidth = $(window).width();
-			windowsHeight = $(window).height();
+			var windowsWidth = $(window).width(),
+				windowsHeight = $(window).height();
 
 			//text and images resizing
 			if (options.resize) {
@@ -651,6 +654,7 @@
 
 				if (!isMoving && !slideMoving) { //if theres any #
 					var touchEvents = getEventsPage(e);
+
 					touchEndY = touchEvents['y'];
 					touchEndX = touchEvents['x'];
 
@@ -707,10 +711,6 @@
 
 		function touchStartHandler(event){
 			var e = event.originalEvent;
-
-			if(options.autoScrolling){
-				event.preventDefault();
-			}
 
 			var touchEvents = getEventsPage(e);
 			touchStartY = touchEvents['y'];
@@ -848,9 +848,7 @@
 			//more than once if the page is scrolling
 			isMoving = true;
 
-			if(typeof v.anchorLink !== 'undefined'){
-				setURLHash(slideIndex, slideAnchorLink, v.anchorLink, v.sectionIndex);
-			}
+			setURLHash(slideIndex, slideAnchorLink, v.anchorLink, v.sectionIndex);
 
 			//callback (onLeave) if the site is not just resizing and readjusting the slides
 			$.isFunction(options.onLeave) && !v.localIsResizing && options.onLeave.call(this, v.leavingSection, (v.sectionIndex + 1), v.yMovement);
@@ -1024,44 +1022,51 @@
 		 * Sliding with arrow keys, both, vertical and horizontal
 		 */
 		$(document).keydown(function(e) {
-
 			//Moving the main page with the keyboard arrows if keyboard scrolling is enabled
-			if (options.keyboardScrolling && !isMoving && options.autoScrolling) {
-				switch (e.which) {
-					//up
-					case 38:
-					case 33:
-						$.fn.fullpage.moveSectionUp();
-						break;
+			if (options.keyboardScrolling && options.autoScrolling) {
 
-					//down
-					case 40:
-					case 34:
-						$.fn.fullpage.moveSectionDown();
-						break;
+				//preventing the scroll with arrow keys
+				if(e.which == 40 || e.which == 38){
+					e.preventDefault();
+				}
 
-					//Home
-					case 36:
-						$.fn.fullpage.moveTo(1);
-						break;
+				if(!isMoving){
+					switch (e.which) {
+						//up
+						case 38:
+						case 33:
+							$.fn.fullpage.moveSectionUp();
+							break;
 
-					//End
-					case 35:
-						$.fn.fullpage.moveTo( $('.fp-section').length );
-						break;
+						//down
+						case 40:
+						case 34:
+							$.fn.fullpage.moveSectionDown();
+							break;
 
-					//left
-					case 37:
-						$.fn.fullpage.moveSlideLeft();
-						break;
+						//Home
+						case 36:
+							$.fn.fullpage.moveTo(1);
+							break;
 
-					//right
-					case 39:
-						$.fn.fullpage.moveSlideRight();
-						break;
+						//End
+						case 35:
+							$.fn.fullpage.moveTo( $('.fp-section').length );
+							break;
 
-					default:
-						return; // exit this handler for other keys
+						//left
+						case 37:
+							$.fn.fullpage.moveSlideLeft();
+							break;
+
+						//right
+						case 39:
+							$.fn.fullpage.moveSlideRight();
+							break;
+
+						default:
+							return; // exit this handler for other keys
+					}
 				}
 			}
 		});
@@ -1543,8 +1548,12 @@
 				}
 
 				setBodyClass(location.hash);
-			}else{
-				setBodyClass(sectionIndex + '-' + slideIndex);
+			}
+			else if(typeof slideIndex !== 'undefined'){
+					setBodyClass(sectionIndex + '-' + slideIndex);
+			}
+			else{
+				setBodyClass(String(sectionIndex));
 			}
 		}
 
@@ -1657,7 +1666,7 @@
 		function getMSPointer(){
 			var pointer;
 
-			//IE >= 11
+			//IE >= 11 & rest of browsers
 			if(window.PointerEvent){
 				pointer = { down: "pointerdown", move: "pointermove"};
 			}
@@ -1675,13 +1684,9 @@
 		*/
 		function getEventsPage(e){
 			var events = new Array();
-			if (window.navigator.msPointerEnabled){
-				events['y'] = e.pageY;
-				events['x'] = e.pageX;
-			}else{
-				events['y'] = e.touches[0].pageY;
-				events['x'] =  e.touches[0].pageX;
-			}
+
+			events['y'] = (typeof e.pageY !== 'undefined' && (e.pageY || e.pageX) ? e.pageY : e.touches[0].pageY);
+			events['x'] = (typeof e.pageX !== 'undefined' && (e.pageY || e.pageX) ? e.pageX : e.touches[0].pageX);
 
 			return events;
 		}
