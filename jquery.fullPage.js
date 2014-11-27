@@ -324,7 +324,9 @@
 			$(this).css('height', windowsHeight + 'px');
 
 			if(options.paddingTop || options.paddingBottom){
-				$(this).css('padding', options.paddingTop  + ' 0 ' + options.paddingBottom + ' 0');
+        if (!$(this).attr('data-nopadding')) { // || $(window).width() > $(this).attr('data-nopadding')
+          $(this).css('padding', options.paddingTop  + ' 0 ' + options.paddingBottom + ' 0');
+        }
 			}
 
 			if (typeof options.sectionsColor[index] !==  'undefined') {
